@@ -1,0 +1,217 @@
+---
+title: "EDA Project1"
+author: "Heathvonn Styles"
+output:
+  html_document:
+    df_print: paged
+---
+
+```
+Step 1: Load in bird-diversity.csv data
+```
+
+```{r echo=FALSE}
+df <- read.csv("bird-diversity.csv",stringsAsFactors=TRUE)
+```
+
+```
+Step 2: Analyze structure of dataframe inclusive of data type stored in each column, lengths of columns and rows 
+```
+
+```{r echo=FALSE}
+
+str(df)
+```
+
+```
+Step 3: Visualize data frame with actual data values
+```
+
+```{r echo=FALSE}
+df
+
+```
+
+```
+Step 4: Extract valuable insights from data
+```
+```{r echo=FALSE}
+
+cat("Unique Families:", length(unique(df$Family)))
+
+cat("\nUnique Species:", length(unique(df$Species)))
+```
+
+```
+The dataset was found to contain multiple Family classifications for which different Species were grouped into. 
+Using the provided family and Species classifications the amount of unique Families and Species were identified.
+```
+
+
+
+```{r echo=FALSE}
+unique_families <- unique(df$Family)
+
+for (row in unique_families) {
+  value <- row
+  df[df$Family == value,]
+  
+}
+```
+
+```{r echo=FALSE}
+suppressMessages(library(tidyverse))
+suppressMessages(library(corrplot))
+
+df %>%
+dplyr::select(Heterozygosity, Allelic.richness,Breeding.range.size, Body.mass, Latitude) %>%
+cor(.) %>%
+corrplot(.,method="number")
+
+df.new <- df %>%
+dplyr::select(Heterozygosity, Allelic.richness,Breeding.range.size, Body.mass, Latitude) %>%
+gather(.)
+
+ggplot(data=df.new,mapping=aes(x=value)) +
+geom_histogram(color="blue",fill="yellow",bins=25) +
+facet_wrap(~key,scales='free')
+
+```
+
+```
+A correlation plot was made to find highly correlated data which exists in the dataset. The correlation plot utilizes numbers ranging from -1 to 1 to show the level of correlation. Numbers closer to -1 or 1 are considered to be highly correlated.
+
+```
+
+
+```{r echo=FALSE}
+suppressMessages(library(tidyverse))
+
+ggplot(data = df, mapping = aes(x = Breeding.range.size, y = Body.mass)) +
+    geom_point(alpha = 0.7, aes(color = Family)) +
+    xlab("Body Mass") +
+    ylab("Breeding Range Size")
+
+```
+
+
+
+```{r echo=FALSE}
+suppressMessages(library(tidyverse))
+
+species_count_per_family = c()
+
+for (row in unique_families) {
+  value <- row
+  count_of_species <- nrow(df[df$Family == value,])
+
+  species_count_per_family <- append(species_count_per_family,count_of_species)
+}
+
+
+df_new <- data.frame( unique_families, species_count_per_family )
+
+df_new
+
+  ggplot(data=df_new, aes(x=unique_families, y=species_count_per_family)) +
+  geom_bar(stat="identity",fill="steelblue")+
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+    xlab("Unique Families") +
+    ylab("Species count per Family")
+  
+  
+
+```
+```
+The various Family classifications were seperated along with the species that are members of the Families. The bar graph above visualizes a comparison of the count of species in each family. This allows for us to see that Passeriformes have the largest number of species out of the entire  group of Families and Podicipediformes, Sturhioniformes and Tinamiformes have the least number of species.
+```
+
+```{r fig.height = 8, fig.width = 15, echo=FALSE}
+suppressMessages(library(tidyverse))
+
+species_count_per_family = c()
+species_migratory_status = c()
+
+migratory_count = c()
+resident_count = c()
+
+
+family_migration_counts = setNames(data.frame(matrix(ncol = 3, nrow = 1)), c("family", "migration_type", "count"))
+
+
+for (row in unique_families) {
+  value <- row
+  count_of_species <- nrow(df[df$Family == value,])
+
+  df_groups <- df[df$Family == value,]
+  
+  df_groups
+  
+  count_of_migratory <- nrow(df[df$Family == value & df$Migratory.status == "Migratory",]) 
+  count_of_resident <- nrow(df[df$Family == value & df$Migratory.status == "Resident",]) 
+  
+  species_count_per_family <- append(species_count_per_family,count_of_species)
+  
+  family_migration_counts <- rbind(family_migration_counts , list(value,'Migratory',count_of_migratory ))
+  family_migration_counts <- rbind(family_migration_counts , list(value,'Resident',count_of_resident ))
+  
+  migratory_count <- append(migratory_count , count_of_migratory)
+  resident_count <- append(resident_count,count_of_resident)
+  
+}
+
+
+df_new <- data.frame( unique_families, species_count_per_family,migratory_count, resident_count)
+
+df_new
+family_migration_counts[2:nrow(family_migration_counts),]
+
+  ggplot(data=df_new, aes(x=unique_families, y=species_count_per_family)) +
+  geom_bar(stat="identity",fill="steelblue")+
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
+    xlab("Family") +
+    ylab("Species Count Per Family")
+  
+  
+  ggplot(data=family_migration_counts[2:nrow(family_migration_counts),], aes(x=migration_type, y=count,   fill=family)) +
+    geom_bar(stat="identity", position="dodge", width = 0.7) +
+    xlab("Migration Status") +
+    ylab("Count of Species")
+  
+  ggplot(data=family_migration_counts[2:nrow(family_migration_counts),], aes(x=family, y=count,   fill=migration_type)) +
+    geom_bar(stat="identity",width = 0.7) +
+    scale_x_discrete(guide = guide_axis(angle = 90)) +
+    xlab("Family") +
+    ylab("Migratory/Resident Ratio Per Family") +
+    scale_fill_manual(labels=c("Migratory", "Resident"),values=c('cyan3','#CDB79E'))
+    
+```
+```
+The graphs above were created to provide a breakdown of the different Family Species makeups, in terms of how many species and how many species within a family are Migratory or Resident. 
+```
+```{r echo=FALSE}
+
+ggplot(data=df,mapping=aes(x=Body.mass,y=Heterozygosity, group=1)) +
+geom_boxplot(fill="#9F79EE") +
+  xlab("Body Mass") +
+    ylab("Heterozygosity")
+
+ggplot(data=df,mapping=aes(x=Latitude,y=Heterozygosity, group=1)) +
+geom_boxplot(fill="#9F79EE") +
+  xlab("Latitude") +
+    ylab("Heterozygosity")
+
+ggplot(data=df,mapping=aes(x=Breeding.range.size,y=Heterozygosity, group=1)) +
+geom_boxplot(fill="#9F79EE") +
+  xlab("Breeding Range Size") +
+    ylab("Heterozygosity")
+```
+
+
+```{r}
+
+ggplot(data=df,mapping=aes(x= Breeding.range.size,y=Heterozygosity)) +
+geom_point(color="red",size=0.5) +
+    xlab("Breeding Range Size") +
+    ylab("Heterozygosity")
+```
